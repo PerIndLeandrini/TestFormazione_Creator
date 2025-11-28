@@ -21,6 +21,85 @@ div[role="radiogroup"] > label {
 """, unsafe_allow_html=True)
 
 st.title("📝 Quiz Formazione Sicurezza sul Lavoro")
+         
+# ============================================================
+# 🔐 LOGIN DA CSV ESTERNO (utenti_quiz.csv)
+# ============================================================
+
+@st.cache_data
+def load_users():
+    try:
+        df_users = pd.read_csv("utenti_quiz.csv")
+    except FileNotFoundError:
+        st.error("File 'utenti_quiz.csv' non trovato. Crealo nella stessa cartella dell'app.")
+        return pd.DataFrame()
+
+    required_cols = {"username", "password"}
+    if not required_cols.issubset(set(df_users.columns)):
+        st.error("Il file 'utenti_quiz.csv' deve contenere almeno le colonne: username, password.")
+        return pd.DataFrame()
+
+    return df_users
+
+df_users = load_users()
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "logged_user" not in st.session_state:
+    st.session_state.logged_user = None
+if "user_role" not in st.session_state:
+    st.session_state.user_role = None
+if "user_ente" not in st.session_state:
+    st.session_state.user_ente = None
+
+with st.sidebar:
+    st.header("Accesso riservato 🔐")
+    login_user = st.text_input("Utente", key="login_user")
+    login_pwd = st.text_input("Password", type="password", key="login_pwd")
+    login_btn = st.button("Login")
+
+    if login_btn:
+        if df_users is None or df_users.empty:
+            st.error("Nessun utente caricato. Verifica il file 'utenti_quiz.csv'.")
+        else:
+            row = df_users[df_users["username"] == login_user]
+            if not row.empty and str(row.iloc[0]["password"]) == login_pwd:
+                st.session_state.logged_in = True
+                st.session_state.logged_user = login_user
+                st.session_state.user_role = row.iloc[0].get("ruolo", "")
+                st.session_state.user_ente = row.iloc[0].get("ente", "")
+                st.success(f"Accesso effettuato come: {login_user}")
+            else:
+                st.session_state.logged_in = False
+                st.session_state.logged_user = None
+                st.session_state.user_role = None
+                st.session_state.user_ente = None
+                st.error("Credenziali non valide.")
+
+    if st.session_state.logged_in:
+        info = f"✅ Utente: **{st.session_state.logged_user}**"
+        if st.session_state.user_role:
+            info += f" — Ruolo: **{st.session_state.user_role}**"
+        if st.session_state.user_ente:
+            info += f" — Ente: **{st.session_state.user_ente}**"
+        st.caption(info)
+
+        if st.button("Logout"):
+            st.session_state.logged_in = False
+            st.session_state.logged_user = None
+            st.session_state.user_role = None
+            st.session_state.user_ente = None
+            st.experimental_rerun()
+
+# Se NON loggato → blocca qui
+if not st.session_state.logged_in:
+    st.warning("Accesso riservato. Effettua il login dalla sidebar per utilizzare il quiz.")
+    st.stop()
+
+
+# ============================================================
+# Da qui in giù: APP QUIZ COME L'AVEVI GIÀ (solo sotto login)
+# ============================================================
 
 # ---------- Sidebar: config ----------
 with st.sidebar:
