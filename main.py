@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import random
+import os
+import glob
 
 st.set_page_config(page_title="Quiz Formazione Sicurezza", page_icon="📝", layout="wide")
 
@@ -21,7 +23,25 @@ div[role="radiogroup"] > label {
 """, unsafe_allow_html=True)
 
 st.title("📝 Quiz Formazione Sicurezza sul Lavoro")
-         
+
+# ============================================================
+# 📂 FUNZIONE: ELENCO BANCHE DOMANDE DAL REPO
+# ============================================================
+
+@st.cache_data
+def list_quiz_files(base_folder: str = "banche_dati_quiz"):
+    """Ritorna lista di (label, path_assoluto) per tutti i CSV nella cartella indicata."""
+    pattern = os.path.join(base_folder, "*.csv")
+    files = glob.glob(pattern)
+
+    quiz_files = []
+    for f in sorted(files):
+        name = os.path.basename(f)
+        label = os.path.splitext(name)[0]  # nome file senza .csv
+        quiz_files.append((label, f))
+
+    return quiz_files
+
 # ============================================================
 # 🔐 LOGIN DA CSV ESTERNO (utenti_quiz.csv)
 # ============================================================
@@ -96,17 +116,27 @@ if not st.session_state.logged_in:
     st.warning("Accesso riservato. Effettua il login dalla sidebar per utilizzare il quiz.")
     st.stop()
 
-
 # ============================================================
-# Da qui in giù: APP QUIZ COME L'AVEVI GIÀ (solo sotto login)
+# Da qui in giù: APP QUIZ (solo sotto login)
 # ============================================================
 
 # ---------- Sidebar: config ----------
 with st.sidebar:
     st.header("Impostazioni quiz")
 
-    csv_file = st.file_uploader("Carica banca domande (CSV)", type=["csv"])
-    st.caption("Colonne richieste: argomento, codice, domanda, opzione_a, opzione_b, opzione_c, opzione_d, corretta, riferimento")
+    # 🔽 ELENCO BANCHE DOMANDE DAL REPO
+    quiz_files = list_quiz_files("banche_dati_quiz")
+
+    if not quiz_files:
+        st.error("Nessuna banca domande trovata nella cartella 'banche_dati_quiz'.")
+        st.stop()
+
+    labels = [label for label, _ in quiz_files]
+    selected_label = st.selectbox("Seleziona banca domande", options=labels)
+    selected_path = dict(quiz_files)[selected_label]
+
+    st.caption(f"File selezionato: `{selected_path}`")
+    st.caption("Formato richiesto: argomento, codice, domanda, opzione_a, opzione_b, opzione_c, opzione_d, corretta, riferimento")
 
     st.divider()
     st.header("Dati partecipante")
@@ -118,20 +148,11 @@ with st.sidebar:
     n_domande = st.number_input("Numero domande da estrarre", min_value=10, max_value=50, value=30, step=1)
     seed = st.text_input("Seed casuale (facoltativo, per avere sempre lo stesso quiz)", value="")
 
-if csv_file is None:
-    st.info("Carica un file CSV con la banca domande per iniziare.")
-    st.stop()
-
-# ---------- Lettura CSV ----------
+# ---------- Lettura CSV dalla banca selezionata ----------
 try:
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(selected_path)
 except Exception as e:
-    st.error(f"Errore nella lettura del CSV: {e}")
-    st.stop()
-
-required_cols = {"argomento", "codice", "domanda", "opzione_a", "opzione_b", "opzione_c", "opzione_d", "corretta"}
-if not required_cols.issubset(set(df.columns)):
-    st.error(f"Il CSV deve contenere almeno queste colonne: {', '.join(required_cols)}")
+    st.error(f"Errore nella lettura del CSV '{selected_path}': {e}")
     st.stop()
 
 # Argomenti
@@ -283,5 +304,3 @@ if st.button("✅ Correggi quiz"):
         st.dataframe(df_err, use_container_width=True)
     else:
         st.success("Tutte le risposte sono corrette. Ottimo lavoro!")
-
-    # FUTURO: qui puoi decidere soglia di superamento, salvataggio CSV, generazione badge, ecc.
