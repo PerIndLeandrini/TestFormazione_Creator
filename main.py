@@ -4,7 +4,7 @@ from datetime import date
 import random
 import os
 import glob
-import haslib
+import hashlib
 
 st.set_page_config(page_title="Quiz Formazione Sicurezza", page_icon="📝", layout="wide")
 
