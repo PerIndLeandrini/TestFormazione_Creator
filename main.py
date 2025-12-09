@@ -5,10 +5,37 @@ import random
 import os
 import glob
 import hashlib
+import smtplib
+from email.message import EmailMessage
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
 
 st.set_page_config(page_title="Quiz Formazione Sicurezza", page_icon="📝", layout="wide")
 
-# ---------- CSS ----------
+# ============================================================
+# CONFIG GENERALE
+# ============================================================
+SOGLIA_SUPERAMENTO = 80.0  # 80%
+
+# --- EMAIL DA st.secrets ---
+try:
+    EMAIL_SENDER = st.secrets["email"]["sender"]
+    EMAIL_RECEIVER_DEFAULT = st.secrets["email"]["receiver"]
+    EMAIL_PASSWORD = st.secrets["email"]["password"]
+    EMAIL_SMTP_SERVER = st.secrets["email"].get("smtp_server", "smtp.gmail.com")
+    EMAIL_SMTP_PORT = int(st.secrets["email"].get("smtp_port", 465))
+except Exception:
+    EMAIL_SENDER = None
+    EMAIL_RECEIVER_DEFAULT = None
+    EMAIL_PASSWORD = None
+    EMAIL_SMTP_SERVER = "smtp.gmail.com"
+    EMAIL_SMTP_PORT = 465
+
+# ============================================================
+# CSS
+# ============================================================
 st.markdown("""
 <style>
 :root { --brand:#0f766e; --muted:#6b7280; --soft:#e5e7eb; --danger:#b91c1c; --danger-bg:#fee2e2; }
@@ -26,7 +53,7 @@ div[role="radiogroup"] > label {
 st.title("📝 Quiz Formazione Sicurezza sul Lavoro")
 
 # ============================================================
-# 📂 FUNZIONE: ELENCO BANCHE DOMANDE DAL REPO
+# FUNZIONI UTILI
 # ============================================================
 
 @st.cache_data
@@ -40,12 +67,8 @@ def list_quiz_files(base_folder: str = "banche_dati_quiz"):
         name = os.path.basename(f)
         label = os.path.splitext(name)[0]  # nome file senza .csv
         quiz_files.append((label, f))
-
     return quiz_files
 
-# ============================================================
-# 🔐 LOGIN DA CSV ESTERNO (utenti_quiz.csv)
-# ============================================================
 
 @st.cache_data
 def load_users():
@@ -62,6 +85,106 @@ def load_users():
 
     return df_users
 
+
+def build_badge_pdf(nome, corso, data_quiz, punteggio, totale, percentuale, esito,
+                    argomento_scelto, ente, username):
+    """
+    Crea un badge PDF semplice con i dati del quiz.
+    Ritorna bytes del PDF.
+    """
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+
+    # Background semplice
+    c.setFillColorRGB(0.95, 0.95, 0.95)
+    c.rect(1.5*cm, 6*cm, width - 3*cm, 10*cm, fill=True, stroke=0)
+
+    # Header
+    c.setFillColorRGB(0, 0, 0)
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(width / 2, height - 4*cm, "Badge Esito Quiz Formazione Sicurezza")
+
+    # Box principale
+    c.setFont("Helvetica", 11)
+    y = height - 6*cm
+
+    corso_txt = corso or argomento_scelto or "Corso / Quiz"
+    data_str = data_quiz.strftime("%d/%m/%Y")
+
+    lines = [
+        f"Partecipante: {nome or '-'}",
+        f"Corso / Modulo: {corso_txt}",
+        f"Data quiz: {data_str}",
+        f"Ente / Azienda: {ente or '-'}",
+        f"Utente sistema: {username or '-'}",
+        "",
+        f"Esito: {esito}",
+        f"Punteggio: {punteggio} / {totale} ({percentuale}%)",
+        f"Soglia di superamento: {SOGLIA_SUPERAMENTO}%",
+    ]
+
+    for line in lines:
+        c.drawString(3*cm, y, line)
+        y -= 0.8*cm
+
+    # Esito grande
+    c.setFont("Helvetica-Bold", 22)
+    if esito == "SUPERATO":
+        c.setFillColorRGB(0, 0.5, 0)  # verde
+    else:
+        c.setFillColorRGB(0.7, 0, 0)  # rosso
+    c.drawCentredString(width / 2, 7*cm, esito)
+
+    # Footer
+    c.setFillColorRGB(0.3, 0.3, 0.3)
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(width / 2, 2*cm, "Generato automaticamente dal sistema quiz 4Step")
+
+    c.showPage()
+    c.save()
+
+    pdf_bytes = buf.getvalue()
+    buf.close()
+    return pdf_bytes
+
+
+def send_email_with_pdf(to_addrs, subject, body, pdf_bytes, pdf_filename):
+    """
+    Invia una mail con allegato PDF.
+    Usa le credenziali/config da st.secrets.
+    """
+    if not (EMAIL_SENDER and EMAIL_PASSWORD and EMAIL_RECEIVER_DEFAULT):
+        return False, "Configurazione email non completa in st.secrets."
+
+    if isinstance(to_addrs, str):
+        to_addrs = [to_addrs]
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_SENDER
+    msg["To"] = ", ".join(to_addrs)
+    msg.set_content(body)
+
+    msg.add_attachment(
+        pdf_bytes,
+        maintype="application",
+        subtype="pdf",
+        filename=pdf_filename
+    )
+
+    try:
+        with smtplib.SMTP_SSL(EMAIL_SMTP_SERVER, EMAIL_SMTP_PORT) as server:
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.send_message(msg)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+# ============================================================
+# LOGIN
+# ============================================================
 df_users = load_users()
 
 if "logged_in" not in st.session_state:
@@ -118,7 +241,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ============================================================
-# Da qui in giù: APP QUIZ (solo sotto login)
+# APP QUIZ (solo sotto login)
 # ============================================================
 
 # ---------- Sidebar: config ----------
@@ -144,6 +267,7 @@ with st.sidebar:
     nome = st.text_input("Nome e cognome")
     corso = st.text_input("Corso / Modulo (es. Formazione generale 4h)", value="")
     data_quiz = st.date_input("Data quiz", value=date.today())
+    email_partecipante = st.text_input("Email partecipante (facoltativa)")
 
     st.divider()
     n_domande = st.number_input("Numero domande da estrarre", min_value=10, max_value=50, value=30, step=1)
@@ -154,6 +278,11 @@ try:
     df = pd.read_csv(selected_path)
 except Exception as e:
     st.error(f"Errore nella lettura del CSV '{selected_path}': {e}")
+    st.stop()
+
+required_cols = {"argomento", "codice", "domanda", "opzione_a", "opzione_b", "opzione_c", "opzione_d", "corretta"}
+if not required_cols.issubset(set(df.columns)):
+    st.error(f"Il CSV deve contenere almeno queste colonne: {', '.join(required_cols)}")
     st.stop()
 
 # Argomenti
@@ -272,34 +401,39 @@ if st.button("✅ Correggi quiz"):
         testo_corretta = options[correct_idx][1]  # testo risposta corretta
 
         if scelta is None:
-            esito = "NON RISPOSTA"
+            esito_dom = "NON RISPOSTA"
             corretta = testo_corretta
         elif scelta == testo_corretta:
             punteggio += 1
-            esito = "CORRETTA"
+            esito_dom = "CORRETTA"
             corretta = testo_corretta
         else:
-            esito = "ERRATA"
+            esito_dom = "ERRATA"
             corretta = testo_corretta
 
-        if esito != "CORRETTA":
+        if esito_dom != "CORRETTA":
             dettagli_errori.append({
                 "N": i+1,
                 "Codice": row["codice"],
                 "Domanda": row["domanda"],
-                "Esito": esito,
+                "Esito": esito_dom,
                 "Risposta data": scelta if scelta else "",
                 "Risposta corretta": corretta,
                 "Riferimento": row.get("riferimento", "")
             })
 
     percentuale = round((punteggio / totale) * 100, 1) if totale > 0 else 0.0
+    esito = "SUPERATO" if percentuale >= SOGLIA_SUPERAMENTO else "NON SUPERATO"
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Risposte corrette", f"{punteggio} / {totale}")
     with col2:
         st.metric("Punteggio %", f"{percentuale}%")
+    with col3:
+        st.metric("Esito", esito)
+
+    st.markdown(f"**Soglia di superamento:** {SOGLIA_SUPERAMENTO}%")
 
     st.markdown("---")
 
@@ -309,3 +443,65 @@ if st.button("✅ Correggi quiz"):
         st.dataframe(df_err, use_container_width=True)
     else:
         st.success("Tutte le risposte sono corrette. Ottimo lavoro!")
+
+    # ---------- Badge PDF + invio email ----------
+    if esito == "SUPERATO":
+        corso_txt = corso or argomento_scelto or selected_label
+        ente = st.session_state.user_ente
+        username = st.session_state.logged_user
+
+        badge_pdf = build_badge_pdf(
+            nome=nome,
+            corso=corso_txt,
+            data_quiz=data_quiz,
+            punteggio=punteggio,
+            totale=totale,
+            percentuale=percentuale,
+            esito=esito,
+            argomento_scelto=argomento_scelto,
+            ente=ente,
+            username=username
+        )
+
+        data_str = data_quiz.strftime("%Y%m%d")
+        safe_nome = (nome or "partecipante").replace(" ", "_")
+        pdf_filename = f"badge_{safe_nome}_{data_str}.pdf"
+
+        # Download diretto (comodo anche per test)
+        st.download_button(
+            "⬇️ Scarica badge PDF",
+            data=badge_pdf,
+            file_name=pdf_filename,
+            mime="application/pdf"
+        )
+
+        # Destinatari: default + eventualmente partecipante
+        destinatari = []
+        if EMAIL_RECEIVER_DEFAULT:
+            destinatari.append(EMAIL_RECEIVER_DEFAULT)
+        if email_partecipante:
+            destinatari.append(email_partecipante.strip())
+
+        if destinatari:
+            subject = f"{nome or 'Partecipante'} - {corso_txt} - {percentuale}% ({punteggio}/{totale})"
+            body = (
+                "Buongiorno,\n\n"
+                "in allegato il badge di esito del quiz di formazione sulla sicurezza.\n\n"
+                f"Dettagli:\n"
+                f"- Partecipante: {nome or '-'}\n"
+                f"- Corso / Modulo: {corso_txt}\n"
+                f"- Data quiz: {data_quiz.strftime('%d/%m/%Y')}\n"
+                f"- Esito: {esito}\n"
+                f"- Punteggio: {punteggio}/{totale} ({percentuale}%)\n\n"
+                "Email generata automaticamente dal sistema quiz 4Step."
+            )
+
+            ok, err = send_email_with_pdf(destinatari, subject, body, badge_pdf, pdf_filename)
+            if ok:
+                st.success(f"Badge PDF inviato via email a: {', '.join(destinatari)}")
+            else:
+                st.error(f"Errore nell'invio email: {err}")
+        else:
+            st.info("Badge generato, ma nessun destinatario email configurato.")
+    else:
+        st.warning("Punteggio inferiore alla soglia di superamento: il badge PDF non viene generato.")
