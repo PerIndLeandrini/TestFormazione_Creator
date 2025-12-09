@@ -16,13 +16,13 @@ from email import encoders
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
 
-st.set_page_config(page_title="Quiz Formazione Sicurezza", page_icon="📝", layout="wide")
+st.set_page_config(page_title="Test finale Formazione Sicurezza", page_icon="📝", layout="wide")
 
 # ============================================================
 # COSTANTI
 # ============================================================
 SOGLIA_SUPERAMENTO = 80.0
-RISULTATI_CSV = "risultati_quiz.csv"
+RISULTATI_CSV = "risultati_test_finale.csv"
 
 # ============================================================
 # CSS
@@ -41,7 +41,7 @@ div[role="radiogroup"] > label {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📝 Quiz Formazione Sicurezza sul Lavoro")
+st.title("📝 Test finale formazione sicurezza sul lavoro")
 
 # ============================================================
 # FUNZIONI UTILI
@@ -63,24 +63,37 @@ def list_quiz_files(base_folder: str = "banche_dati_quiz"):
 @st.cache_data
 def load_users():
     try:
-        df_users = pd.read_csv("utenti_quiz.csv")
+        df_users = pd.read_csv("utenti_test_finale.csv")
     except FileNotFoundError:
-        st.error("File 'utenti_quiz.csv' non trovato. Crealo nella stessa cartella dell'app.")
-        return pd.DataFrame()
+        # fallback per compatibilità se il file si chiama ancora utenti_quiz.csv
+        try:
+            df_users = pd.read_csv("utenti_quiz.csv")
+        except FileNotFoundError:
+            st.error("File 'utenti_test_finale.csv' (o 'utenti_quiz.csv') non trovato. Crealo nella stessa cartella dell'app.")
+            return pd.DataFrame()
 
     required_cols = {"username", "password"}
     if not required_cols.issubset(set(df_users.columns)):
-        st.error("Il file 'utenti_quiz.csv' deve contenere almeno le colonne: username, password.")
+        st.error("Il file utenti deve contenere almeno le colonne: username, password.")
         return pd.DataFrame()
 
     return df_users
 
 
-def build_quiz_pdf(
+def get_icon(esito: str) -> str:
+    esito = esito.upper()
+    if esito == "CORRETTA":
+        return "✅"
+    if esito == "ERRATA":
+        return "❌"
+    return "⚠️"
+
+
+def build_test_pdf(
     nome: str,
     corso: str,
     argomento: str,
-    data_quiz: date,
+    data_test: date,
     punteggio: int,
     percentuale: float,
     superato: bool,
@@ -88,42 +101,44 @@ def build_quiz_pdf(
     quiz_options,
     risposte_utente
 ) -> bytes:
-    """Genera un PDF con riepilogo completo del quiz (domande, risposte date, correttezza)."""
+    """Genera un PDF con riepilogo completo del test finale (domande, risposte date, correttezza)."""
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     width, height = A4
 
     y = height - 50
 
-    titolo = "Report Quiz Formazione Sicurezza"
+    titolo = "Report Test finale formazione sicurezza"
     c.setFont("Helvetica-Bold", 16)
+    c.setFillColorRGB(0, 0, 0)
     c.drawString(50, y, titolo)
     y -= 25
 
     c.setFont("Helvetica", 10)
+    data_str = data_test.strftime("%d/%m/%Y") if isinstance(data_test, date) else str(data_test)
+    corso_o_argomento = corso or argomento or "-"
+    esito_txt = "SUPERATO" if superato else "NON SUPERATO"
+
     c.drawString(50, y, f"Nome: {nome or '-'}")
     y -= 15
-    c.drawString(50, y, f"Corso / Modulo: {corso or argomento or '-'}")
+    c.drawString(50, y, f"Corso / Modulo: {corso_o_argomento}")
     y -= 15
-    data_str = data_quiz.strftime("%d/%m/%Y") if isinstance(data_quiz, date) else str(data_quiz)
-    c.drawString(50, y, f"Data quiz: {data_str}")
+    c.drawString(50, y, f"Data test finale: {data_str}")
     y -= 15
     c.drawString(50, y, f"Punteggio: {punteggio} / {len(quiz_df)} ({percentuale}%)")
     y -= 15
-    esito_txt = "SUPERATO" if superato else "NON SUPERATO"
     c.drawString(50, y, f"Esito: {esito_txt} (soglia {SOGLIA_SUPERAMENTO}%)")
     y -= 30
 
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Dettaglio domande:")
+    c.drawString(50, y, "Dettaglio domande test finale:")
     y -= 20
     c.setFont("Helvetica", 9)
 
     for i, row in quiz_df.iterrows():
-        domanda = row["domanda"]
+        domanda = str(row["domanda"])
         options = quiz_options[i]
         scelta = risposte_utente[i]
-        correct_idx = quiz_options[i].index(next(o for o in options if o[1] == options[[lab for lab, _ in options].index(o[0])][1])) if quiz_options[i] else None
 
         # individua testo risposta corretta
         corretta_label = str(row["corretta"]).strip().upper()
@@ -133,6 +148,7 @@ def build_quiz_pdf(
                 testo_corretta = txt
                 break
 
+        # esito
         if scelta is None:
             esito = "NON RISPOSTA"
         elif scelta == testo_corretta:
@@ -140,23 +156,36 @@ def build_quiz_pdf(
         else:
             esito = "ERRATA"
 
-        # gestione a capo e pagine
-        blocco = [
-            f"{i+1}. {domanda}",
-            f"   Esito: {esito}",
-            f"   Risposta data: {scelta if scelta else 'NON RISPOSTA'}",
-            f"   Risposta corretta: {testo_corretta}"
-        ]
+        icon = get_icon(esito)
 
-        for line in blocco:
-            if y < 80:
-                c.showPage()
-                y = height - 50
-                c.setFont("Helvetica", 9)
-            c.drawString(50, y, line)
-            y -= 12
+        # nuova pagina se serve
+        if y < 100:
+            c.showPage()
+            c.setFont("Helvetica", 9)
+            y = height - 50
 
-        y -= 8  # spazio fra domande
+        # Domanda (nero)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(50, y, f"{i+1}. {domanda}")
+        y -= 12
+
+        # Esito (colorato)
+        if esito == "CORRETTA":
+            c.setFillColorRGB(0.0, 0.5, 0.0)  # verde
+        elif esito == "ERRATA":
+            c.setFillColorRGB(0.75, 0.0, 0.0)  # rosso
+        else:
+            c.setFillColorRGB(0.8, 0.5, 0.0)   # arancio
+
+        c.drawString(50, y, f"{icon} Esito: {esito}")
+        y -= 12
+        c.drawString(50, y, f"   Risposta data: {scelta if scelta else 'NON RISPOSTA'}")
+        y -= 12
+
+        # Risposta corretta (nero)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(50, y, f"   Risposta corretta: {testo_corretta}")
+        y -= 16  # piccolo spazio extra tra domande
 
     c.showPage()
     c.save()
@@ -165,8 +194,8 @@ def build_quiz_pdf(
     return pdf_bytes
 
 
-def build_badge_pdf(nome: str, corso: str, data_quiz: date, percentuale: float) -> bytes:
-    """Badge semplice di superamento (A4 orizzontale)."""
+def build_badge_pdf(nome: str, corso: str, data_test: date, percentuale: float) -> bytes:
+    """Badge semplice di superamento test finale (A4 orizzontale)."""
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=landscape(A4))
     width, height = landscape(A4)
@@ -176,18 +205,18 @@ def build_badge_pdf(nome: str, corso: str, data_quiz: date, percentuale: float) 
 
     c.setFillColorRGB(0, 0, 0)
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width / 2, height - 70, "Badge superamento quiz")
+    c.drawCentredString(width / 2, height - 70, "Badge superamento test finale")
 
     c.setFont("Helvetica", 14)
     c.drawCentredString(width / 2, height - 110, f"Nome: {nome or '-'}")
     c.drawCentredString(width / 2, height - 140, f"Corso: {corso or '-'}")
 
-    data_str = data_quiz.strftime("%d/%m/%Y") if isinstance(data_quiz, date) else str(data_quiz)
-    c.drawCentredString(width / 2, height - 170, f"Data quiz: {data_str}")
+    data_str = data_test.strftime("%d/%m/%Y") if isinstance(data_test, date) else str(data_test)
+    c.drawCentredString(width / 2, height - 170, f"Data test finale: {data_str}")
     c.drawCentredString(width / 2, height - 200, f"Punteggio: {percentuale}%")
 
     c.setFont("Helvetica-Oblique", 10)
-    c.drawRightString(width - 40, 40, "Rilasciato automaticamente dal sistema quiz sicurezza")
+    c.drawRightString(width - 40, 40, "Rilasciato automaticamente dal sistema di test finale sicurezza")
 
     c.showPage()
     c.save()
@@ -273,7 +302,7 @@ with st.sidebar:
 
     if login_btn:
         if df_users is None or df_users.empty:
-            st.error("Nessun utente caricato. Verifica il file 'utenti_quiz.csv'.")
+            st.error("Nessun utente caricato. Verifica il file utenti.")
         else:
             row = df_users[df_users["username"] == login_user]
             if not row.empty and str(row.iloc[0]["password"]) == login_pwd:
@@ -305,14 +334,14 @@ with st.sidebar:
             st.experimental_rerun()
 
 if not st.session_state.logged_in:
-    st.warning("Accesso riservato. Effettua il login dalla sidebar per utilizzare il quiz.")
+    st.warning("Accesso riservato. Effettua il login dalla sidebar per utilizzare il test finale.")
     st.stop()
 
 # ============================================================
-# CONFIGURAZIONE QUIZ
+# CONFIGURAZIONE TEST FINALE
 # ============================================================
 with st.sidebar:
-    st.header("Impostazioni quiz")
+    st.header("Impostazioni test finale")
 
     quiz_files = list_quiz_files("banche_dati_quiz")
     if not quiz_files:
@@ -331,11 +360,11 @@ with st.sidebar:
     nome = st.text_input("Nome e cognome")
     email_partecipante = st.text_input("Email partecipante (facoltativa)")
     corso = st.text_input("Corso / Modulo (es. Formazione generale 4h)", value="")
-    data_quiz = st.date_input("Data quiz", value=date.today())
+    data_test = st.date_input("Data test finale", value=date.today())
 
     st.divider()
     n_domande = st.number_input("Numero domande da estrarre", min_value=10, max_value=50, value=30, step=1)
-    seed = st.text_input("Seed casuale (facoltativo, per avere sempre lo stesso quiz)", value="")
+    seed = st.text_input("Seed casuale (facoltativo, per avere sempre lo stesso test finale)", value="")
 
 # Lettura banca domande
 try:
@@ -359,13 +388,13 @@ if df_topic.empty:
 
 st.write(f"**Argomento selezionato:** {argomento_scelto} — Domande disponibili: {len(df_topic)}")
 
-# Stato quiz
+# Stato test
 if "quiz_df" not in st.session_state:
     st.session_state.quiz_df = None
     st.session_state.quiz_options = None
     st.session_state.quiz_correct_idx = None
 
-def prepara_quiz():
+def prepara_test():
     seed_str = seed.strip()
     seed_int = None
     if seed_str:
@@ -402,18 +431,18 @@ def prepara_quiz():
     st.session_state.quiz_correct_idx = quiz_correct_idx
 
 st.markdown("---")
-if st.button("🎲 Prepara quiz (estrai domande)"):
-    prepara_quiz()
+if st.button("🎲 Prepara test finale (estrai domande)"):
+    prepara_test()
 
 if st.session_state.quiz_df is None:
-    st.info("Premi **'Prepara quiz'** per generare il test.")
+    st.info("Premi **'Prepara test finale (estrai domande)'** per generare il test.")
     st.stop()
 
 quiz_df = st.session_state.quiz_df
 quiz_options = st.session_state.quiz_options
 quiz_correct_idx = st.session_state.quiz_correct_idx
 
-st.subheader(f"Quiz generato — {len(quiz_df)} domande")
+st.subheader(f"Test finale generato — {len(quiz_df)} domande")
 
 # Visualizzazione domande
 risposte_utente = []
@@ -443,7 +472,7 @@ st.markdown("---")
 # ============================================================
 # CORREZIONE + PDF + CSV + EMAIL
 # ============================================================
-if st.button("✅ Correggi quiz"):
+if st.button("✅ Correggi test finale"):
     punteggio = 0
     totale = len(quiz_df)
     dettagli_errori = []
@@ -498,9 +527,9 @@ if st.button("✅ Correggi quiz"):
         st.metric("Punteggio %", f"{percentuale}%")
 
     if superato:
-        st.success(f"Test SUPERATO ✅ (soglia {SOGLIA_SUPERAMENTO}%)")
+        st.success(f"Test finale SUPERATO ✅ (soglia {SOGLIA_SUPERAMENTO}%)")
     else:
-        st.error(f"Test NON superato ❌ (soglia {SOGLIA_SUPERAMENTO}%)")
+        st.error(f"Test finale NON superato ❌ (soglia {SOGLIA_SUPERAMENTO}%)")
 
     st.markdown("---")
 
@@ -511,12 +540,12 @@ if st.button("✅ Correggi quiz"):
     else:
         st.success("Tutte le risposte sono corrette. Ottimo lavoro!")
 
-    # PDF quiz
-    pdf_quiz = build_quiz_pdf(
+    # PDF test finale
+    pdf_test = build_test_pdf(
         nome=nome,
         corso=corso,
         argomento=argomento_scelto,
-        data_quiz=data_quiz,
+        data_test=data_test,
         punteggio=punteggio,
         percentuale=percentuale,
         superato=superato,
@@ -526,14 +555,14 @@ if st.button("✅ Correggi quiz"):
     )
 
     nome_sanit = nome.replace(" ", "_") if nome else "partecipante"
-    corso_sanit = (corso or argomento_scelto or "quiz").replace(" ", "_")
-    data_str = data_quiz.strftime("%Y%m%d") if isinstance(data_quiz, date) else "data"
+    corso_sanit = (corso or argomento_scelto or "test_finale").replace(" ", "_")
+    data_str = data_test.strftime("%Y%m%d") if isinstance(data_test, date) else "data"
     base_filename = f"{data_str}_{corso_sanit}_{nome_sanit}"
 
     st.download_button(
-        "⬇️ Scarica report quiz in PDF",
-        data=pdf_quiz,
-        file_name=f"{base_filename}_quiz.pdf",
+        "⬇️ Scarica report test finale in PDF",
+        data=pdf_test,
+        file_name=f"{base_filename}_test_finale.pdf",
         mime="application/pdf"
     )
 
@@ -543,13 +572,13 @@ if st.button("✅ Correggi quiz"):
         badge_pdf = build_badge_pdf(
             nome=nome,
             corso=corso or argomento_scelto,
-            data_quiz=data_quiz,
+            data_test=data_test,
             percentuale=percentuale
         )
         st.download_button(
-            "⬇️ Scarica badge PDF",
+            "⬇️ Scarica badge test finale (PDF)",
             data=badge_pdf,
-            file_name=f"{base_filename}_badge.pdf",
+            file_name=f"{base_filename}_badge_test_finale.pdf",
             mime="application/pdf"
         )
 
@@ -564,7 +593,7 @@ if st.button("✅ Correggi quiz"):
         "corso": corso,
         "argomento": argomento_scelto,
         "banca_domande": selected_label,
-        "data_quiz": data_quiz.strftime("%Y-%m-%d") if isinstance(data_quiz, date) else str(data_quiz),
+        "data_test": data_test.strftime("%Y-%m-%d") if isinstance(data_test, date) else str(data_test),
         "n_domande": totale,
         "punteggio": punteggio,
         "percentuale": percentuale,
@@ -574,15 +603,15 @@ if st.button("✅ Correggi quiz"):
     salva_risultato_csv(riga_csv)
 
     # Email sempre, con dettaglio domande nel corpo + allegati
-    oggetto_quiz = corso or argomento_scelto or "Quiz Sicurezza"
-    subject = f"{nome or 'Partecipante'} - {oggetto_quiz} - Punteggio {percentuale}%"
+    oggetto_test = corso or argomento_scelto or "Test finale sicurezza"
+    subject = f"{nome or 'Partecipante'} - {oggetto_test} - Punteggio {percentuale}%"
 
     body_lines = [
-        "Esito quiz formazione sicurezza.",
+        "Esito test finale di formazione sicurezza.",
         "",
         f"Nome: {nome or '-'}",
-        f"Corso / Modulo: {oggetto_quiz}",
-        f"Data quiz: {data_quiz.strftime('%d/%m/%Y') if isinstance(data_quiz, date) else str(data_quiz)}",
+        f"Corso / Modulo: {oggetto_test}",
+        f"Data test finale: {data_test.strftime('%d/%m/%Y') if isinstance(data_test, date) else str(data_test)}",
         f"Punteggio: {punteggio} / {totale} ({percentuale}%)",
         f"Esito: {'SUPERATO' if superato else 'NON SUPERATO'} (soglia {SOGLIA_SUPERAMENTO}%)",
         "",
@@ -591,22 +620,25 @@ if st.button("✅ Correggi quiz"):
     ]
 
     for d in storico_domande:
-        body_lines.append(f"{d['N']}. {d['Domanda']}")
+        icon = get_icon(d["Esito"])
+        body_lines.append(f"{icon} {d['N']}. {d['Domanda']}")
         body_lines.append(f"   Esito: {d['Esito']}")
         body_lines.append(f"   Risposta data: {d['Risposta data']}")
         body_lines.append("")
 
-    body_lines.append("In allegato il report PDF del test.")
+    body_lines.append("In allegato il report PDF del test finale.")
     if superato:
         body_lines.append("È allegato anche il badge di superamento in formato PDF.")
 
     body = "\n".join(body_lines)
 
     attachments = [
-        (f"{base_filename}_quiz.pdf", pdf_quiz, "application/pdf")
+        (f"{base_filename}_test_finale.pdf", pdf_test, "application/pdf")
     ]
     if superato and badge_pdf is not None:
-        attachments.append((f"{base_filename}_badge.pdf", badge_pdf, "application/pdf"))
+        attachments.append(
+            (f"{base_filename}_badge_test_finale.pdf", badge_pdf, "application/pdf")
+        )
 
     extra_to = [email_partecipante] if email_partecipante else []
     send_email_with_attachments(subject, body, attachments, extra_to=extra_to)
