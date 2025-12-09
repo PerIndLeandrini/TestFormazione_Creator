@@ -4,6 +4,7 @@ from datetime import date
 import random
 import os
 import glob
+import haslib
 
 st.set_page_config(page_title="Quiz Formazione Sicurezza", page_icon="📝", layout="wide")
 
@@ -174,16 +175,20 @@ if "quiz_df" not in st.session_state:
 
 # ---------- Generazione quiz ----------
 def prepara_quiz():
-    # seed opzionale
-    if seed.strip():
-        try:
-            random.seed(seed.strip())
-        except Exception:
-            pass
+    seed_str = seed.strip()
+    seed_int = None
 
-    # campionamento domande
+    # Se l'utente ha inserito un seed, lo trasformiamo in intero stabile
+    if seed_str:
+        seed_int = int(hashlib.sha256(seed_str.encode("utf-8")).hexdigest(), 16) % (2**32)
+
+    # campionamento domande: se ho un seed, lo uso come random_state
     n = min(n_domande, len(df_topic))
-    quiz_df = df_topic.sample(n=n, random_state=None).reset_index(drop=True)
+    if seed_int is not None:
+        quiz_df = df_topic.sample(n=n, random_state=seed_int).reset_index(drop=True)
+        random.seed(seed_int)  # rende deterministico anche lo shuffle delle opzioni
+    else:
+        quiz_df = df_topic.sample(n=n, random_state=None).reset_index(drop=True)
 
     quiz_options = []
     quiz_correct_idx = []
@@ -195,7 +200,7 @@ def prepara_quiz():
             ("C", row["opzione_c"]),
             ("D", row["opzione_d"]),
         ]
-        random.shuffle(options)  # mescola l'ordine di visualizzazione
+        random.shuffle(options)  # con random.seed(seed_int) lo shuffle è ripetibile
 
         # trova indice della corretta dopo shuffle
         corretta_label = str(row["corretta"]).strip().upper()
