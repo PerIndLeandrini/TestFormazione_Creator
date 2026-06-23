@@ -341,7 +341,7 @@ if not st.session_state.logged_in:
 # CONFIGURAZIONE TEST FINALE
 # ============================================================
 with st.sidebar:
-    st.header("Impostazioni test finale")
+    st.header("SELEZIONARE BANCA DATI")
 
     quiz_files = list_quiz_files("banche_dati_quiz")
     if not quiz_files:
@@ -349,18 +349,15 @@ with st.sidebar:
         st.stop()
 
     labels = [label for label, _ in quiz_files]
-    selected_label = st.selectbox("Seleziona banca domande", options=labels)
+    selected_label = st.selectbox(":", options=labels)
     selected_path = dict(quiz_files)[selected_label]
-
-    st.caption(f"File selezionato: `{selected_path}`")
-    st.caption("Formato richiesto: argomento, codice, domanda, opzione_a, opzione_b, opzione_c, opzione_d, corretta, riferimento")
 
     st.divider()
     st.header("Dati partecipante")
     nome = st.text_input("Nome e cognome")
     email_partecipante = st.text_input("Email partecipante (facoltativa)")
-    corso = st.text_input("Corso / Modulo (es. Formazione generale 4h)", value="")
-    data_test = st.date_input("Data test finale", value=date.today())
+    corso = st.text_input("Corso / Modulo", value="")
+    data_test = st.date_input("Data", value=date.today())
 
     st.divider()
     n_domande = st.number_input("Numero domande da estrarre", min_value=10, max_value=50, value=30, step=1)
