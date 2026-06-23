@@ -272,11 +272,20 @@ def send_email_with_attachments(subject: str, body: str, attachments, extra_to=N
         msg.attach(part)
 
     try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-            server.login(sender, password)
-            server.sendmail(sender, to_addrs, msg.as_string())
-        st.success("📧 Email inviata con successo.")
+      smtp_server = email_conf["smtp_server"]
+      smtp_port = int(email_conf["smtp_port"])
+
+      context = ssl.create_default_context()
+
+      with smtplib.SMTP_SSL(
+        smtp_server,
+        smtp_port,
+        context=context
+      ) as server:
+        server.login(sender, password)
+        server.sendmail(sender, to_addrs, msg.as_string())
+        
+      st.success("📧 Email inviata con successo.")
     except Exception as e:
         st.error(f"Errore nell'invio email: {e}")
 
