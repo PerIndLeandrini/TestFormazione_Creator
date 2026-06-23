@@ -334,7 +334,7 @@ with st.sidebar:
             st.experimental_rerun()
 
 if not st.session_state.logged_in:
-    st.warning("Accesso riservato. Effettua il login dalla sidebar per utilizzare il test finale.")
+    st.warning("Accesso riservato. Effettua il login dalla sidebar a fianco.")
     st.stop()
 
 # ============================================================
