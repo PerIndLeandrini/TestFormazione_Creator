@@ -283,6 +283,7 @@ def send_email_with_attachments(subject: str, body: str, attachments, extra_to=N
         context=context
       ) as server:
         server.login(sender, password)
+        st.write("Destinatari:", to_addrs)
         server.sendmail(sender, to_addrs, msg.as_string())
         
       st.success("📧 Email inviata con successo.")
