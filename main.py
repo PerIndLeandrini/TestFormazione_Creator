@@ -247,6 +247,8 @@ def send_email_with_attachments(subject: str, body: str, attachments, extra_to=N
         email_conf = st.secrets["email"]
         sender = email_conf["sender"]
         receiver = email_conf["receiver"]
+        st.write("Mittente:", sender)
+        st.write("Destinatario principale:", receiver)
         password = email_conf["password"]
     except Exception:
         st.error("Configurazione email non trovata in st.secrets['email'].")
