@@ -41,7 +41,7 @@ div[role="radiogroup"] > label {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📝 Test finale formazione sicurezza sul lavoro")
+st.title("📝 Hub Formazione - Crea il tuo test finale")
 
 # ============================================================
 # FUNZIONI UTILI
