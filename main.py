@@ -349,7 +349,7 @@ with st.sidebar:
         st.stop()
 
     labels = [label for label, _ in quiz_files]
-    selected_label = st.selectbox(":", options=labels)
+    selected_label = st.selectbox(options=labels)
     selected_path = dict(quiz_files)[selected_label]
 
     st.divider()
