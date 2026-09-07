@@ -3,11 +3,11 @@ import pandas as pd
 from datetime import date, datetime
 import random
 import os
-import glob
 import hashlib
 import io
 import smtplib
 import ssl
+from pathlib import Path
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,6 +15,7 @@ from email import encoders
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
+from quiz_db import list_banks, list_topics, load_questions
 
 st.set_page_config(page_title="Test finale Formazione Sicurezza", page_icon="📝", layout="wide")
 
@@ -23,21 +24,109 @@ st.set_page_config(page_title="Test finale Formazione Sicurezza", page_icon="�
 # ============================================================
 SOGLIA_SUPERAMENTO = 80.0
 RISULTATI_CSV = "risultati_test_finale.csv"
+BASE_DIR = Path(__file__).resolve().parent
+QUIZ_DB = BASE_DIR / "quiz_database.db"
+TUTTI_GLI_ARGOMENTI = "Tutti gli argomenti"
 
 # ============================================================
 # CSS
 # ============================================================
 st.markdown("""
 <style>
-:root { --brand:#0f766e; --muted:#6b7280; --soft:#e5e7eb; --danger:#b91c1c; --danger-bg:#fee2e2; }
-.block-container { padding-top: 1rem; }
-h1,h2,h3 { letter-spacing: .2px; }
-div[role="radiogroup"] > label {
-  padding: 6px 10px; border: 1px solid var(--soft); border-radius: 8px; margin-right: 6px; margin-bottom: 6px;
+:root {
+  --navy:#102a43;
+  --navy-light:#1f4e79;
+  --navy-hover:#173f63;
+  --page:#f7f9fc;
+  --panel:#f1f3f5;
+  --panel-border:#d8dee6;
+  --text:#243447;
+  --muted:#66788a;
+  --danger:#b42318;
+  --danger-bg:#fee4e2;
 }
-[data-testid="stMetricValue"] { color: var(--brand); }
-.badge-nc { background:#b91c1c; color:#fff; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
-.ref { color:#666; font-size:12px; font-size:12px; }
+
+/* Area principale */
+[data-testid="stAppViewContainer"] { background:var(--page); color:var(--text); }
+[data-testid="stHeader"] { background:rgba(247,249,252,.92); }
+.block-container { padding-top:1.25rem; padding-bottom:3rem; max-width:1400px; }
+h1,h2,h3 { color:var(--navy); letter-spacing:.15px; }
+h1 { font-weight:750; }
+p, label, .stMarkdown { color:var(--text); }
+hr { border-color:#dfe5ec; }
+
+/* Sidebar navy */
+[data-testid="stSidebar"] {
+  background:linear-gradient(180deg, #0b2239 0%, var(--navy) 55%, #153a5b 100%);
+  border-right:1px solid #203f5e;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] .stMarkdown { color:#f5f8fc !important; }
+[data-testid="stSidebar"] hr { border-color:rgba(255,255,255,.18); }
+[data-testid="stSidebar"] [data-baseweb="input"] > div,
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+  background:#ffffff;
+  border-color:#c9d5e2;
+  border-radius:8px;
+}
+[data-testid="stSidebar"] [data-baseweb="input"] input { color:#172b3f; }
+
+/* Riquadri delle domande */
+[data-testid="stVerticalBlockBorderWrapper"] {
+  background:var(--panel);
+  border:1px solid var(--panel-border) !important;
+  border-radius:12px !important;
+  box-shadow:0 1px 3px rgba(16,42,67,.06);
+}
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+  border-color:#b8c5d3 !important;
+  box-shadow:0 3px 10px rgba(16,42,67,.08);
+}
+
+/* Risposte */
+div[role="radiogroup"] > label {
+  padding:7px 11px;
+  border:1px solid #d2d9e1;
+  border-radius:8px;
+  margin-right:6px;
+  margin-bottom:6px;
+  background:#ffffff;
+  transition:border-color .15s ease, background-color .15s ease;
+}
+div[role="radiogroup"] > label:hover {
+  border-color:var(--navy-light);
+  background:#f5f8fb;
+}
+
+/* Pulsanti e indicatori */
+.stButton > button,
+.stDownloadButton > button {
+  background:var(--navy-light);
+  color:#ffffff;
+  border:1px solid var(--navy-light);
+  border-radius:8px;
+  font-weight:650;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+  background:var(--navy-hover);
+  color:#ffffff;
+  border-color:var(--navy-hover);
+}
+[data-testid="stMetric"] {
+  background:#ffffff;
+  border:1px solid var(--panel-border);
+  border-radius:10px;
+  padding:14px 18px;
+}
+[data-testid="stMetricValue"] { color:var(--navy-light); }
+.badge-nc { background:var(--danger); color:#fff; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+.ref { color:var(--muted); font-size:12px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,16 +137,24 @@ st.title("📝 Hub Formazione - Crea il tuo test finale")
 # ============================================================
 
 @st.cache_data
-def list_quiz_files(base_folder: str = "banche_dati_quiz"):
-    """Ritorna lista di (label, path_assoluto) per tutti i CSV nella cartella indicata."""
-    pattern = os.path.join(base_folder, "*.csv")
-    files = glob.glob(pattern)
-    quiz_files = []
-    for f in sorted(files):
-        name = os.path.basename(f)
-        label = os.path.splitext(name)[0]  # nome file senza .csv
-        quiz_files.append((label, f))
-    return quiz_files
+def get_quiz_banks(db_path: str, database_mtime: float):
+    """Carica le banche attive; mtime invalida la cache quando cambia il DB."""
+    del database_mtime
+    return list_banks(db_path)
+
+
+@st.cache_data
+def get_quiz_topics(db_path: str, database_mtime: float, bank_id: int):
+    del database_mtime
+    return list_topics(db_path, bank_id)
+
+
+@st.cache_data
+def get_quiz_questions(
+    db_path: str, database_mtime: float, bank_id: int, topic_id: int | None
+):
+    del database_mtime
+    return load_questions(db_path, bank_id, topic_id)
 
 
 @st.cache_data
@@ -355,14 +452,25 @@ if not st.session_state.logged_in:
 with st.sidebar:
     st.header("SELEZIONARE BANCA DATI")
 
-    quiz_files = list_quiz_files("banche_dati_quiz")
-    if not quiz_files:
-        st.error("Nessuna banca domande trovata nella cartella 'banche_dati_quiz'.")
+    if not QUIZ_DB.exists():
+        st.error(
+            "Database delle domande non trovato. "
+            "Esegui 'python importa_quiz_csv.py' per crearlo."
+        )
         st.stop()
 
-    labels = [label for label, _ in quiz_files]
-    selected_label = st.selectbox("", options=labels)
-    selected_path = dict(quiz_files)[selected_label]
+    database_mtime = QUIZ_DB.stat().st_mtime
+    quiz_banks = get_quiz_banks(str(QUIZ_DB), database_mtime)
+    if not quiz_banks:
+        st.error("Il database non contiene banche domande attive.")
+        st.stop()
+
+    bank_by_label = {
+        f"{name} ({count} domande)": (bank_id, name)
+        for bank_id, name, count in quiz_banks
+    }
+    selected_bank_label = st.selectbox("", options=list(bank_by_label))
+    selected_bank_id, selected_label = bank_by_label[selected_bank_label]
 
     st.divider()
     st.header("Dati partecipante")
@@ -375,33 +483,67 @@ with st.sidebar:
     n_domande = st.number_input("Numero domande da estrarre", min_value=10, max_value=50, value=30, step=1)
     seed = st.text_input("Seed casuale (facoltativo, per avere sempre lo stesso test finale)", value="")
 
-# Lettura banca domande
+# Lettura banca e argomento dal database SQLite
 try:
-    df = pd.read_csv(selected_path)
+    topics = get_quiz_topics(str(QUIZ_DB), database_mtime, selected_bank_id)
+    if not topics:
+        st.error("La banca selezionata non contiene argomenti attivi.")
+        st.stop()
+
+    if len(topics) > 1:
+        topic_by_label = {
+            TUTTI_GLI_ARGOMENTI: (None, TUTTI_GLI_ARGOMENTI),
+            **{
+                f"{name} ({count})": (topic_id, name)
+                for topic_id, name, count in topics
+            },
+        }
+        selected_topic_label = st.selectbox(
+            "Seleziona l'argomento / modulo di formazione",
+            options=list(topic_by_label),
+        )
+        selected_topic_id, argomento_scelto = topic_by_label[selected_topic_label]
+    else:
+        selected_topic_id, argomento_scelto, _ = topics[0]
+        st.selectbox(
+            "Seleziona l'argomento / modulo di formazione",
+            options=[argomento_scelto],
+            disabled=True,
+        )
+
+    df_topic = get_quiz_questions(
+        str(QUIZ_DB), database_mtime, selected_bank_id, selected_topic_id
+    ).copy()
 except Exception as e:
-    st.error(f"Errore nella lettura del CSV '{selected_path}': {e}")
+    st.error(f"Errore nella lettura del database delle domande: {e}")
     st.stop()
-
-required_cols = {"argomento", "codice", "domanda", "opzione_a", "opzione_b", "opzione_c", "opzione_d", "corretta"}
-if not required_cols.issubset(set(df.columns)):
-    st.error(f"Il CSV deve contenere almeno queste colonne: {', '.join(required_cols)}")
-    st.stop()
-
-argomenti = sorted(df["argomento"].dropna().unique().tolist())
-argomento_scelto = st.selectbox("Seleziona l'argomento / modulo di formazione", options=argomenti)
-df_topic = df[df["argomento"] == argomento_scelto].copy()
 
 if df_topic.empty:
     st.warning("Nessuna domanda per l'argomento selezionato.")
     st.stop()
 
-st.write(f"**Argomento selezionato:** {argomento_scelto} — Domande disponibili: {len(df_topic)}")
+st.write(
+    f"**Banca selezionata:** {selected_label} — "
+    f"**Argomento:** {argomento_scelto} — "
+    f"Domande disponibili: {len(df_topic)}"
+)
 
 # Stato test
 if "quiz_df" not in st.session_state:
     st.session_state.quiz_df = None
     st.session_state.quiz_options = None
     st.session_state.quiz_correct_idx = None
+if "quiz_source" not in st.session_state:
+    st.session_state.quiz_source = None
+
+current_quiz_source = (selected_bank_id, selected_topic_id)
+if st.session_state.quiz_source != current_quiz_source:
+    st.session_state.quiz_df = None
+    st.session_state.quiz_options = None
+    st.session_state.quiz_correct_idx = None
+    for key in list(st.session_state):
+        if key.startswith("q_"):
+            del st.session_state[key]
 
 def prepara_test():
     seed_str = seed.strip()
@@ -438,13 +580,14 @@ def prepara_test():
     st.session_state.quiz_df = quiz_df
     st.session_state.quiz_options = quiz_options
     st.session_state.quiz_correct_idx = quiz_correct_idx
+    st.session_state.quiz_source = current_quiz_source
 
 st.markdown("---")
-if st.button("🎲 Prepara test finale (estrai domande)"):
+if st.button('🎲'):
     prepara_test()
 
 if st.session_state.quiz_df is None:
-    st.info("Premi **'Prepara test finale (estrai domande)'** per generare il test.")
+    st.info("Premi il bottone qui sopra a forma di dado **'Preparai il test finale (estraendo le domande dalla banca dati selezionata)'** Potrai svolgere il test subito dopo...")
     st.stop()
 
 quiz_df = st.session_state.quiz_df
