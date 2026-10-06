@@ -472,6 +472,9 @@ with st.sidebar:
     selected_bank_label = st.selectbox("", options=list(bank_by_label))
     selected_bank_id, selected_label = bank_by_label[selected_bank_label]
 
+    # Soglia del test di aggiornamento concordato; le altre banche restano all'80%.
+    SOGLIA_SUPERAMENTO = 70.0 if selected_label == "FORM_SP_LavRB" else 80.0
+
     st.divider()
     st.header("Dati partecipante")
     nome = st.text_input("Nome e cognome")

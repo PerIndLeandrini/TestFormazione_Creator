@@ -1,0 +1,398 @@
+{
+  "seed": "4STEP-FASTFOOD-30-2026",
+  "categoria": "FORM_SP_LavRB",
+  "numero_domande": 30,
+  "soglia": 21,
+  "domande": [
+    {
+      "numero": 1,
+      "codice": "RB_FF_019",
+      "domanda": "La segnalazione di quasi infortunio serve a",
+      "opzioni": [
+        "Trovare subito una persona da punire",
+        "Evitare la registrazione degli episodi senza danni",
+        "Sostituire la manutenzione",
+        "Correggere condizioni che possono causare danno"
+      ],
+      "corretta": "D",
+      "spiegazione": "Analisi preventiva."
+    },
+    {
+      "numero": 2,
+      "codice": "RB_FF_017",
+      "domanda": "L’olio nella friggitrice prende fuoco",
+      "opzioni": [
+        "Sposto la vasca",
+        "Verso acqua",
+        "Do l’allarme e attivo il piano senza usare acqua",
+        "Copro subito la vasca con un telo qualsiasi"
+      ],
+      "corretta": "C",
+      "spiegazione": "Addetti formati e mezzi previsti."
+    },
+    {
+      "numero": 3,
+      "codice": "RB_FF_011",
+      "domanda": "Per un carico sul ripiano alto",
+      "opzioni": [
+        "Salgo sullo scaffale",
+        "Uso una sedia qualsiasi",
+        "Chiedo al collega di reggere una sedia mentre salgo",
+        "Uso l’accesso previsto e idoneo o chiedo aiuto"
+      ],
+      "corretta": "D",
+      "spiegazione": "Nessun accesso improvvisato."
+    },
+    {
+      "numero": 4,
+      "codice": "RB_FF_025",
+      "domanda": "In un piccolo deposito senti un sibilo dalla bombola di CO2. Cosa fai?",
+      "opzioni": [
+        "Mi affido all’odore per capire se c’è pericolo",
+        "Chiudo la porta e continuo a lavorare all’interno",
+        "Mi allontano e attivo la procedura prevista senza espormi alla perdita",
+        "Cerco la perdita avvicinando il viso"
+      ],
+      "corretta": "C",
+      "spiegazione": "La CO2 è inodore. Quantità, ventilazione e locali determinano il rischio; la perdita va gestita da chi è competente."
+    },
+    {
+      "numero": 5,
+      "codice": "RB_FF_013",
+      "domanda": "La porta della cella ha lo sblocco difettoso",
+      "opzioni": [
+        "Chiedo controlli occasionali a un collega",
+        "Lascio un cartone tra porta e telaio ed entro",
+        "Segnalo e impedisco l’uso secondo procedura",
+        "Entro velocemente"
+      ],
+      "corretta": "C",
+      "spiegazione": "Non entrare con sicurezza difettosa."
+    },
+    {
+      "numero": 6,
+      "codice": "RB_FF_007",
+      "domanda": "Candeggina e disincrostante acido",
+      "opzioni": [
+        "Si usano insieme se la stanza è aperta",
+        "Si miscelano in piccole quantità",
+        "Si miscelano se si indossano guanti",
+        "Non vanno miscelati"
+      ],
+      "corretta": "D",
+      "spiegazione": "Possibile sviluppo di gas pericolosi."
+    },
+    {
+      "numero": 7,
+      "codice": "RB_FF_021",
+      "domanda": "La piastra a doppio contatto si chiude in modo irregolare. Cosa fai?",
+      "opzioni": [
+        "Applico la procedura di arresto e fuori uso e avviso il responsabile",
+        "Chiedo a un collega di trattenerla mentre lavoro",
+        "La uso più lentamente senza segnalarla",
+        "La accompagno con la mano per finire gli ordini"
+      ],
+      "corretta": "A",
+      "spiegazione": "Una chiusura anomala può causare schiacciamento e ustioni. Non compensare un guasto con le mani."
+    },
+    {
+      "numero": 8,
+      "codice": "RB_FF_004",
+      "domanda": "Temperatura e sequenza di filtrazione si ricavano da",
+      "opzioni": [
+        "Una temperatura unica per tutte le friggitrici",
+        "Esperienza del collega più veloce",
+        "La velocità necessaria a terminare il turno",
+        "Manuale e procedura della specifica macchina"
+      ],
+      "corretta": "D",
+      "spiegazione": "Sistemi automatici e manuali hanno condizioni specifiche."
+    },
+    {
+      "numero": 9,
+      "codice": "RB_FF_012",
+      "domanda": "La rotazione riduce affaticamento quando",
+      "opzioni": [
+        "Aumenta la velocità del gesto a parità di carico",
+        "Mantiene identici gesti e posture",
+        "Cambia esposizione e consente recupero",
+        "Cambia soltanto il nome della postazione"
+      ],
+      "corretta": "C",
+      "spiegazione": "Dipende dai compiti reali."
+    },
+    {
+      "numero": 10,
+      "codice": "RB_FF_020",
+      "domanda": "Un guasto elettrico espone parti pericolose",
+      "opzioni": [
+        "Tocco per capire se è in tensione",
+        "Asciugo la zona e riprendo a usare l’attrezzatura difettosa",
+        "Evito contatto, proteggo area e attivo procedura",
+        "Riparo il cavo durante il servizio"
+      ],
+      "corretta": "C",
+      "spiegazione": "Intervento da personale competente."
+    },
+    {
+      "numero": 11,
+      "codice": "RB_FF_014",
+      "domanda": "Un cliente minaccia e blocca il passaggio",
+      "opzioni": [
+        "Lo trattengo fisicamente",
+        "Cerco una posizione sicura e attivo aiuto",
+        "Inseguo il cliente per chiarire il comportamento",
+        "Continuo il confronto"
+      ],
+      "corretta": "B",
+      "spiegazione": "Priorità alla sicurezza."
+    },
+    {
+      "numero": 12,
+      "codice": "RB_FF_005",
+      "domanda": "Un coltello cade dal piano",
+      "opzioni": [
+        "Mi scosto e lo lascio cadere",
+        "Provo ad afferrarlo dal manico",
+        "Lo devio con la mano aperta",
+        "Lo blocco con un piede"
+      ],
+      "corretta": "A",
+      "spiegazione": "Evitare la presa al volo."
+    },
+    {
+      "numero": 13,
+      "codice": "RB_FF_015",
+      "domanda": "Nel drive un oggetto cade nella corsia",
+      "opzioni": [
+        "Entro subito perché sono vicino",
+        "Chiedo una retromarcia senza coordinamento",
+        "Applico la procedura senza espormi al traffico",
+        "Indosso un indumento visibile ed entro senza coordinamento"
+      ],
+      "corretta": "C",
+      "spiegazione": "Nessun ingresso improvvisato."
+    },
+    {
+      "numero": 14,
+      "codice": "RB_FF_010",
+      "domanda": "Prima di spostare un collo è utile",
+      "opzioni": [
+        "Verificare presa, percorso, destinazione e ausili",
+        "Procedere più velocemente per limitare lo sforzo",
+        "Decidere soltanto in base al peso",
+        "Sollevare comunque per stimare il peso"
+      ],
+      "corretta": "A",
+      "spiegazione": "Considerare l’intero compito."
+    },
+    {
+      "numero": 15,
+      "codice": "RB_FF_023",
+      "domanda": "Prima di pulire o smontare la macchina dessert, un nuovo addetto deve",
+      "opzioni": [
+        "Usare solo acqua calda per evitare altri rischi",
+        "Imitare chi l’ha fatto nel turno precedente",
+        "Lasciare la macchina in funzione per vedere i componenti",
+        "Essere formato e addestrato al compito e seguire la procedura prevista"
+      ],
+      "corretta": "D",
+      "spiegazione": "L’osservazione di un collega non sostituisce addestramento e sequenza del fabbricante."
+    },
+    {
+      "numero": 16,
+      "codice": "RB_FF_018",
+      "domanda": "Durante l’evacuazione",
+      "opzioni": [
+        "Rientro quando non vedo più fumo",
+        "Torno per recuperare il telefono",
+        "Raggiungo il punto di raccolta secondo piano",
+        "Seguo il percorso più breve anche se non previsto dal piano"
+      ],
+      "corretta": "C",
+      "spiegazione": "Rientro solo autorizzato."
+    },
+    {
+      "numero": 17,
+      "codice": "RB_FF_002",
+      "domanda": "Un riparo della macchina è danneggiato",
+      "opzioni": [
+        "Uso la macchina con maggiore attenzione",
+        "Affido la macchina a un collega più esperto senza segnalarla",
+        "Applico la procedura di fuori uso e avviso",
+        "Lo tolgo per evitare che si incastri"
+      ],
+      "corretta": "C",
+      "spiegazione": "Nessuna manomissione."
+    },
+    {
+      "numero": 18,
+      "codice": "RB_FF_016",
+      "domanda": "Una misura organizzativa contro lo stress è",
+      "opzioni": [
+        "Chiedere soltanto di resistere",
+        "Evitare le segnalazioni",
+        "Rivedere compiti, carichi e risorse",
+        "Affidare i compiti critici al primo collega disponibile"
+      ],
+      "corretta": "C",
+      "spiegazione": "La prevenzione riguarda organizzazione."
+    },
+    {
+      "numero": 19,
+      "codice": "RB_FF_027",
+      "domanda": "L’auto al drive si ferma troppo lontano dalla finestra. Come consegni le bevande?",
+      "opzioni": [
+        "Esco nella corsia senza avvisare",
+        "Mantengo una presa stabile e seguo la modalità di consegna o riposizionamento prevista dalla sede",
+        "Mi sporgo finché raggiungo il finestrino",
+        "Passo le bevande con un lancio breve"
+      ],
+      "corretta": "B",
+      "spiegazione": "Non compensare la distanza perdendo appoggio; considerare traffico, posture e liquidi caldi."
+    },
+    {
+      "numero": 20,
+      "codice": "RB_FF_001",
+      "domanda": "Il pavimento torna bagnato dopo la pulizia",
+      "opzioni": [
+        "Continuo la pulizia lasciando libero il passaggio",
+        "Proteggo il passaggio e segnalo anche la causa",
+        "Aspetto che si asciughi da solo",
+        "Metto un cartello e continuo senza avvisare"
+      ],
+      "corretta": "B",
+      "spiegazione": "La protezione temporanea accompagna la gestione della causa."
+    },
+    {
+      "numero": 21,
+      "codice": "RB_FF_024",
+      "domanda": "Nell’area lavaggio un utensile tagliente è nascosto nell’acqua. Come gestisci la situazione?",
+      "opzioni": [
+        "Evito di cercarlo con le mani e seguo la procedura per renderlo visibile e recuperarlo in sicurezza",
+        "Chiedo a un collega di cercarlo mentre apro la lavastoviglie",
+        "Lo cerco lentamente con le mani nude",
+        "Uso un guanto monouso e cerco sul fondo"
+      ],
+      "corretta": "A",
+      "spiegazione": "Gli utensili taglienti vanno mantenuti visibili e separati; evitare la ricerca alla cieca."
+    },
+    {
+      "numero": 22,
+      "codice": "RB_FF_006",
+      "domanda": "Il detergente è in una bottiglia senza etichetta",
+      "opzioni": [
+        "Lo annuso per capire il contenuto",
+        "Interrompo l’uso e chiedo la corretta identificazione",
+        "Lo diluisco per renderlo meno pericoloso",
+        "Lo uso solo per il pavimento"
+      ],
+      "corretta": "B",
+      "spiegazione": "Non annusare per identificare."
+    },
+    {
+      "numero": 23,
+      "codice": "RB_FF_009",
+      "domanda": "Le screpolature peggiorano durante la pulizia",
+      "opzioni": [
+        "Uso la diagnosi di un collega",
+        "Le segnalo nei canali previsti",
+        "Le nascondo e continuo allo stesso modo",
+        "Cambio prodotto senza informare nessuno"
+      ],
+      "corretta": "B",
+      "spiegazione": "Valutazione competente."
+    },
+    {
+      "numero": 24,
+      "codice": "RB_FF_030",
+      "domanda": "Nel picco manca personale e serve il cambio olio. Il nuovo collega non è addestrato. Quale scelta è corretta?",
+      "opzioni": [
+        "Semplificare la sequenza per finire prima",
+        "Fargli eseguire l’operazione sotto pressione osservando un collega a distanza",
+        "Riorganizzare compiti e priorità con il responsabile, assegnando l’operazione solo a personale addestrato",
+        "Affidargli il compito se indossa un guanto alimentare"
+      ],
+      "corretta": "C",
+      "spiegazione": "L’urgenza non sostituisce le competenze. Coordinare servizio, consegne e operazioni critiche."
+    },
+    {
+      "numero": 25,
+      "codice": "RB_FF_026",
+      "domanda": "Il dosatore del detergente è guasto. Qual è la risposta corretta?",
+      "opzioni": [
+        "Mescolo il residuo con un altro prodotto",
+        "Uso il prodotto concentrato per ridurre il tempo",
+        "Segnalo il guasto e uso solo l’eventuale alternativa autorizzata con dosi e protezioni previste",
+        "Scelgo la diluizione guardando il colore"
+      ],
+      "corretta": "C",
+      "spiegazione": "Nessuna diluizione a occhio o miscela improvvisata. Consultare etichetta, SDS e procedura effettiva."
+    },
+    {
+      "numero": 26,
+      "codice": "RB_FF_022",
+      "domanda": "Un panino è bloccato nel tostatore in funzione. Qual è la scelta corretta?",
+      "opzioni": [
+        "Tolgo il carter e recupero il panino",
+        "Seguo la procedura di arresto e gestione delle energie per lo sblocco autorizzato",
+        "Raggiungo il prodotto rapidamente con un guanto alimentare",
+        "Introduco una pinza lunga mentre il meccanismo gira"
+      ],
+      "corretta": "B",
+      "spiegazione": "Lo sblocco richiede la procedura del modello e personale autorizzato; restano possibili calore ed energie residue."
+    },
+    {
+      "numero": 27,
+      "codice": "RB_FF_028",
+      "domanda": "Il sacco dei rifiuti è pieno. Quale comportamento è corretto?",
+      "opzioni": [
+        "Cerco con le mani eventuali oggetti taglienti",
+        "Lo trascino nel percorso dei mezzi in manovra",
+        "Uso contenitori e modalità di raccolta previsti senza comprimere il sacco con le mani",
+        "Lo comprimo con le mani indossando guanti monouso"
+      ],
+      "corretta": "C",
+      "spiegazione": "Non comprimere o frugare manualmente nei sacchi; valutare taglienti, peso, ausili e percorso."
+    },
+    {
+      "numero": 28,
+      "codice": "RB_FF_003",
+      "domanda": "Manca il contenitore previsto per il cambio olio",
+      "opzioni": [
+        "Cerco il responsabile e uso solo attrezzature idonee",
+        "Chiedo a un collega di reggerlo",
+        "Uso un secchio per alimenti disponibile",
+        "Rimando la segnalazione e completo lo svuotamento"
+      ],
+      "corretta": "A",
+      "spiegazione": "Nessun recipiente improvvisato."
+    },
+    {
+      "numero": 29,
+      "codice": "RB_FF_029",
+      "domanda": "Il tecnico si allontana per un ricambio lasciando una macchina fuori servizio. Il turno successivo deve",
+      "opzioni": [
+        "Rispettare il fuori servizio e attendere la rimessa in uso autorizzata",
+        "Togliere la delimitazione per liberare la linea",
+        "Affidarla all’addetto più rapido per recuperare gli ordini",
+        "Provare ad accenderla per verificare se funziona"
+      ],
+      "corretta": "A",
+      "spiegazione": "Il fuori servizio deve restare riconoscibile e comunicato; riavvio e ripristino seguono le responsabilità previste."
+    },
+    {
+      "numero": 30,
+      "codice": "RB_FF_008",
+      "domanda": "Il DPI per un prodotto chimico si sceglie in base a",
+      "opzioni": [
+        "Disponibilità in magazzino",
+        "Tipo di guanto usato per manipolare gli alimenti",
+        "Colore del guanto",
+        "Valutazione, SDS e istruzioni"
+      ],
+      "corretta": "D",
+      "spiegazione": "Compatibilità con prodotto e compito."
+    }
+  ]
+}
